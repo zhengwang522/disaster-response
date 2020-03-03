@@ -1,5 +1,6 @@
 import sys
 import pandas as pd
+import numpy as np
 import re
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
@@ -41,14 +42,15 @@ def build_model():
         ('tfidf', TfidfTransformer()),
         ('clf', MultiOutputClassifier(RandomForestClassifier()))
     ])
+   
     return pipeline
 
 
 def evaluate_model(model, X_test, Y_test, category_names):
     Y_pred = model.predict(X_test)
-    print(classification_report(Y_test, Y_pred, target_names=category_names))
+    for j in range(Y_test.shape[1]):
+        print(classification_report(Y_test[:,j], Y_pred[:,j], labels=np.unique(Y_pred[:,j])))
     
-
 
 def save_model(model, model_filepath):
 
