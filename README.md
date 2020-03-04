@@ -1,5 +1,9 @@
 # Disaster Response Pipeline Project
 
+### Summary
+
+This project is to analyze disaster data gathered from Figure Eight https://www.figure-eight.com/ to build a model for an API that classifies disaster messages. The training data contain about 26000 samples. The classification is for multi-label, each new message will be classified into one or more of the 36 disaster categories.
+
 ### Instructions:
 1. Run the following commands in the project's root directory to set up your database and model.
 
