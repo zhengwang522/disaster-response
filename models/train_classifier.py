@@ -2,14 +2,17 @@ import sys
 import pandas as pd
 import numpy as np
 import re
+import nltk
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 from sqlalchemy import create_engine
 from sklearn.metrics import classification_report
+from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.multioutput import MultiOutputClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline, FeatureUnion
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 import pickle
 
@@ -35,15 +38,59 @@ def tokenize(text):
 
     return lemmed
 
-
+#class StartingVerbExtractor(BaseEstimator, TransformerMixin):
+#
+#    def starting_verb(self, text):
+#        sentence_list = nltk.sent_tokenize(text)
+#        for sentence in sentence_list:
+#            pos_tags = nltk.pos_tag(tokenize(sentence))
+#            first_word, first_tag = pos_tags[0]
+#            if first_tag in ['VB', 'VBP'] or first_word == 'RT':
+#                return True
+#        return False
+#
+#    def fit(self, x, y=None):
+#        return self
+#
+#    def transform(self, X):
+#        X_tagged = pd.Series(X).apply(self.starting_verb)
+#        return pd.DataFrame(X_tagged)
+    
+    
 def build_model():
+    
     pipeline = Pipeline([
-        ('vect', CountVectorizer(tokenizer=tokenize)),
-        ('tfidf', TfidfTransformer()),
+        ('features', FeatureUnion([
+
+            ('text_pipeline', Pipeline([
+                ('vect', CountVectorizer(tokenizer=tokenize)),
+                ('tfidf', TfidfTransformer())
+            ])) #,
+
+            #('starting_verb', StartingVerbExtractor())
+        ])),
+
         ('clf', MultiOutputClassifier(RandomForestClassifier()))
     ])
+
    
-    return pipeline
+    parameters = {
+        #'features__text_pipeline__vect__ngram_range': ((1, 1), (1, 2)),
+        #'features__text_pipeline__vect__max_df': (0.5, 0.75, 1.0),
+        #'features__text_pipeline__vect__max_features': (None, 5000, 10000),
+        'features__text_pipeline__tfidf__use_idf': (True, False),
+        'clf__estimator__n_estimators': [50, 100, 200],
+        'clf__estimator__min_samples_split': [2, 3],
+        #'features__transformer_weights': (
+        #    {'text_pipeline': 1, 'starting_verb': 0.5},
+        #    {'text_pipeline': 0.5, 'starting_verb': 1},
+        #    {'text_pipeline': 0.8, 'starting_verb': 1},
+        #)
+    }
+
+    cv = GridSearchCV(pipeline, param_grid=parameters)
+
+    return cv
 
 
 def evaluate_model(model, X_test, Y_test, category_names):
